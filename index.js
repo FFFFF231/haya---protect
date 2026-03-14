@@ -9,7 +9,8 @@ const client = new Client({
 });
 
 // --- CONFIGURATION ---
-const TOKEN = process.env.DISCORD_TOKEN; // Plus sécurisé ! = 'MTQ4MjEzMDczMDUyNzIzMjAwMA.GhE136.COH0bn0cm8V1NeamOiyblNPKeXbSZZmAgty5BI'; 
+// Sur Railway, tu créeras une variable nommée DISCORD_TOKEN
+const TOKEN = process.env.DISCORD_TOKEN; 
 const MAIN_GUILD_ID = '1481781602508869775'; 
 
 // RÔLES
@@ -23,10 +24,8 @@ const WELCOME_CHANNELS = [
     '1481783380948418663'
 ];
 
-// SALON RÉUSSITE VÉRIF (3 SEC)
+// SALON RÉUSSITE VÉRIF + AUTO-NETTOYAGE (5 SEC)
 const SALON_ACCES_ID = '1481786737683333172'; 
-
-// SALON AUTO-NETTOYAGE (5 SEC)
 const SALON_PURGE_ID = '1481786737683333172';
 
 // SERVEURS PARTENAIRES
@@ -37,21 +36,21 @@ const REQUIRED_GUILDS = [
 ];
 // ---------------------
 
-client.once('clientReady', () => {
-    console.log(`✅ Protect#0311 est prêt et surveille les salons !`);
+client.once('ready', () => {
+    console.log(`✅ Protect#0311 est opérationnel sur Railway !`);
 });
 
 // GESTION DES ARRIVÉES
 client.on('guildMemberAdd', async (member) => {
     if (member.guild.id !== MAIN_GUILD_ID) return;
 
-    // 1. Rôle de base
+    // 1. Rôle de base (Bienvenue)
     try {
         const welcomeRole = member.guild.roles.cache.get(ROLE_BIENVENUE_ID);
         if (welcomeRole) await member.roles.add(welcomeRole);
     } catch (e) { console.error("Erreur rôle bienvenue:", e); }
 
-    // 2. Triple ping éphémère
+    // 2. Triple ping éphémère (3 sec)
     WELCOME_CHANNELS.forEach(channelId => {
         const channel = member.guild.channels.cache.get(channelId);
         if (channel) {
@@ -61,18 +60,18 @@ client.on('guildMemberAdd', async (member) => {
         }
     });
 
-    // 3. Vérification automatique
+    // 3. Vérification automatique des serveurs
     await checkAndGiveRole(member);
 });
 
-// GESTION DES MESSAGES (COMMANDES + AUTO-PURGE)
+// GESTION DES MESSAGES
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // ACTION : AUTO-NETTOYAGE DU SALON SPÉCIFIQUE (5 SEC)
+    // AUTO-NETTOYAGE (5 SEC)
     if (message.channel.id === SALON_PURGE_ID) {
         setTimeout(() => {
-            message.delete().catch(err => console.error("Impossible de supprimer le message:", err));
+            message.delete().catch(() => null);
         }, 5000);
     }
 
@@ -86,6 +85,7 @@ client.on('messageCreate', async (message) => {
 
 async function checkAndGiveRole(member, messageContext = null) {
     let count = 0;
+    
     for (const guildId of REQUIRED_GUILDS) {
         const guild = client.guilds.cache.get(guildId);
         if (guild) {
