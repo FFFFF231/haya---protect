@@ -2,33 +2,23 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds, 
-        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMembers, // Indispensable pour détecter les départs
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent 
     ] 
 });
 
 // --- CONFIGURATION ---
-// Sur Railway, tu créeras une variable nommée DISCORD_TOKEN
 const TOKEN = process.env.DISCORD_TOKEN; 
 const MAIN_GUILD_ID = '1481781602508869775'; 
 
-// RÔLES
 const ROLE_BIENVENUE_ID = '1481786857879634083'; 
 const ROLE_ACCES_SALON = '1482132121635262534'; 
 
-// SALONS PING BIENVENUE (3 SEC)
-const WELCOME_CHANNELS = [
-    '1481783282130747402',
-    '1481783371133747280',
-    '1481783380948418663'
-];
-
-// SALON RÉUSSITE VÉRIF + AUTO-NETTOYAGE (5 SEC)
+const WELCOME_CHANNELS = ['1481783282130747402', '1481783371133747280', '1481783380948418663'];
 const SALON_ACCES_ID = '1481786737683333172'; 
 const SALON_PURGE_ID = '1481786737683333172';
 
-// SERVEURS PARTENAIRES
 const REQUIRED_GUILDS = [
     '1348424569861570651', 
     '1480270184056098839', 
@@ -37,45 +27,57 @@ const REQUIRED_GUILDS = [
 // ---------------------
 
 client.once('ready', () => {
-    console.log(`✅ Protect#0311 est opérationnel sur Railway !`);
+    console.log(`✅ Protect#0311 est opérationnel ! Surveillance des départs activée.`);
 });
 
 // GESTION DES ARRIVÉES
 client.on('guildMemberAdd', async (member) => {
     if (member.guild.id !== MAIN_GUILD_ID) return;
 
-    // 1. Rôle de base (Bienvenue)
-    try {
-        const welcomeRole = member.guild.roles.cache.get(ROLE_BIENVENUE_ID);
-        if (welcomeRole) await member.roles.add(welcomeRole);
-    } catch (e) { console.error("Erreur rôle bienvenue:", e); }
+    // Rôle de base
+    const welcomeRole = member.guild.roles.cache.get(ROLE_BIENVENUE_ID);
+    if (welcomeRole) await member.roles.add(welcomeRole).catch(() => null);
 
-    // 2. Triple ping éphémère (3 sec)
-    WELCOME_CHANNELS.forEach(channelId => {
-        const channel = member.guild.channels.cache.get(channelId);
-        if (channel) {
-            channel.send(`Bienvenue ${member} !`).then(msg => {
-                setTimeout(() => msg.delete().catch(() => null), 3000);
-            });
-        }
+    // Triple ping
+    WELCOME_CHANNELS.forEach(id => {
+        const ch = member.guild.channels.cache.get(id);
+        if (ch) ch.send(`Bienvenue ${member} !`).then(m => setTimeout(() => m.delete().catch(() => null), 3000));
     });
 
-    // 3. Vérification automatique des serveurs
     await checkAndGiveRole(member);
+});
+
+// --- NOUVEAU : GESTION DES DÉPARTS ---
+client.on('guildMemberRemove', async (member) => {
+    // Si le membre quitte l'un des serveurs requis
+    if (REQUIRED_GUILDS.includes(member.guild.id)) {
+        console.log(`⚠️ ${member.user.tag} a quitté un serveur partenaire (${member.guild.name}).`);
+        
+        const mainGuild = client.guilds.cache.get(MAIN_GUILD_ID);
+        if (!mainGuild) return;
+
+        try {
+            // On cherche le membre sur ton serveur principal
+            const mainMember = await mainGuild.members.fetch(member.id).catch(() => null);
+            
+            if (mainMember && mainMember.roles.cache.has(ROLE_ACCES_SALON)) {
+                await mainMember.roles.remove(ROLE_ACCES_SALON);
+                console.log(`🚫 Rôle retiré à ${member.user.tag} car il n'est plus sur tous les serveurs.`);
+            }
+        } catch (e) {
+            console.error("Erreur lors du retrait du rôle :", e);
+        }
+    }
 });
 
 // GESTION DES MESSAGES
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // AUTO-NETTOYAGE (5 SEC)
     if (message.channel.id === SALON_PURGE_ID) {
-        setTimeout(() => {
-            message.delete().catch(() => null);
-        }, 5000);
+        setTimeout(() => message.delete().catch(() => null), 5000);
     }
 
-    // COMMANDE !CHECK
     if (message.content.toLowerCase() === '!check') {
         const reply = await message.reply("🔄 Vérification en cours...");
         await checkAndGiveRole(message.member, message);
@@ -85,7 +87,6 @@ client.on('messageCreate', async (message) => {
 
 async function checkAndGiveRole(member, messageContext = null) {
     let count = 0;
-    
     for (const guildId of REQUIRED_GUILDS) {
         const guild = client.guilds.cache.get(guildId);
         if (guild) {
