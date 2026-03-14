@@ -1,0 +1,12 @@
+{
+  "name": "protect-bot",
+  "version": "1.0.0",
+  "description": "Bot de vérification et rôles",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1"
+  }
+}
