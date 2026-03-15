@@ -122,7 +122,7 @@ client.on('messageCreate', async (message) => {
             const premiumEmbed = new EmbedBuilder()
                 .setColor('#2b2d31')
                 .setTitle('Accès Premium Illimité pour SEULEMENT 3€')
-                .setDescription(`Débloque **TOUT** le contenu exclusif des créatrices les plus demandées : **Top Stars, Blondes, Brunes, Rousses, Métisses, MILF, Étudiantes, Curvy...**\n\n> **Des milliers de photos & vidéos en HD**\n> *Nouveaux ajouts tous les jours*\n> **Téléchargements illimités**\n> *Accès à vie (paiement unique)*\n\n➔ **Débloque maintenant : paypal ( en amis proche ) : @Mtztravox**`);
+                .setDescription(`Débloque **TOUT** le contenu exclusif des créatrices les plus demandées : **Top Stars, Blondes, Brunes, Rousses, Métisses, MILF, Étudiantes, Curvy...**\n\n> **Des milliers de photos & vidéos en HD**\n> *Nouveaux ajouts tous les jours*\n> **Téléchargements illimités**\n> *Accès à vie (paiement unique)*\n\n➔ **Débloque maintenant : paypal ( en amis proche et en mettent ton nom d'utilisateur discord ) : @Mtztravox**`);
             await message.channel.send({ embeds: [premiumEmbed] });
             message.delete().catch(() => null);
         }
