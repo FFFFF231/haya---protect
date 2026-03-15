@@ -18,17 +18,13 @@ const ROLE_ACCES_SALON = '1482132121635262534';
 
 // SALONS
 const WELCOME_CHANNELS = ['1481783282130747402', '1481783371133747280', '1481783380948418663'];
-const SALON_SUCCESS_PING = '1481786658838941706'; // Salon où on ping la réussite
-const SALON_PURGE_ID = '1481786737683333172';    // Salon auto-suppression 5s
-const SALON_PREUVE_ID = '1482724596602900572';   // Salon des instructions (preuve)
+const SALON_SUCCESS_PING = '1481786658838941706'; 
+const SALON_PURGE_ID = '1481786737683333172';    
+const SALON_PREUVE_ID = '1482724596602900572';   
+const SALON_PREMIUM_ID = '1482723967524667482'; // Salon pour l'offre Premium
 
 // SERVEURS PARTENAIRES REQUIS
-const REQUIRED_GUILDS = [
-    '1348424569861570651', 
-    '1480270184056098839', 
-    '1452756361011134496'  
-];
-// ---------------------
+const REQUIRED_GUILDS = ['1348424569861570651', '1480270184056098839', '1452756361011134496'];
 
 client.once('ready', () => {
     console.log(`✅ Protect#0311 est opérationnel !`);
@@ -38,7 +34,6 @@ client.once('ready', () => {
 // --- ARRIVÉE D'UN MEMBRE ---
 client.on('guildMemberAdd', async (member) => {
     if (member.guild.id !== MAIN_GUILD_ID) return;
-
     try {
         const welcomeRole = member.guild.roles.cache.get(ROLE_BIENVENUE_ID);
         if (welcomeRole) await member.roles.add(welcomeRole);
@@ -52,7 +47,6 @@ client.on('guildMemberAdd', async (member) => {
             });
         }
     });
-
     await checkAndGiveRole(member);
 });
 
@@ -61,12 +55,10 @@ client.on('guildMemberRemove', async (member) => {
     if (REQUIRED_GUILDS.includes(member.guild.id)) {
         const mainGuild = client.guilds.cache.get(MAIN_GUILD_ID);
         if (!mainGuild) return;
-
         try {
             const mainMember = await mainGuild.members.fetch(member.id).catch(() => null);
             if (mainMember && mainMember.roles.cache.has(ROLE_ACCES_SALON)) {
                 await mainMember.roles.remove(ROLE_ACCES_SALON);
-                console.log(`🚫 Rôle retiré à ${member.user.tag} (quitté partenaire)`);
             }
         } catch (error) { console.error("❌ Erreur retrait rôle:", error); }
     }
@@ -76,38 +68,37 @@ client.on('guildMemberRemove', async (member) => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // 1. AUTO-NETTOYAGE (5 SEC)
     if (message.channel.id === SALON_PURGE_ID) {
-        setTimeout(() => {
-            message.delete().catch(() => null);
-        }, 5000);
+        setTimeout(() => message.delete().catch(() => null), 5000);
     }
 
-    // 2. COMMANDE !CHECK
     if (message.content.toLowerCase() === '!check') {
-        const reply = await message.reply("🔄 Vérification de tes accès en cours...");
+        const reply = await message.reply("🔄 Vérification...");
         await checkAndGiveRole(message.member, message);
         setTimeout(() => reply.delete().catch(() => null), 3000);
     }
 
-    // 3. COMMANDE !SETUP-INFO (Pour afficher les instructions TikTok)
+    // COMMANDE !SETUP-INFO (TikTok)
     if (message.content.toLowerCase() === '!setup-info' && message.member.permissions.has('Administrator')) {
         const infoEmbed = new EmbedBuilder()
             .setColor('#2b2d31')
             .setTitle('Tu veux les vidéos de toute les influenceuses, tiktok, snap et encore pleins d’autres contenu? suis juste les instructions :')
-            .setDescription(
-                `• Rend toi sur tiktok, cherche **« serveur discord br »** clique sur une vidéo au hasard puis écris dans les commentaire :\n\n` +
-                `> **« /nella meilleur serveur »** (ecris bien **/fgMTVYKTXR**) tu dois le faire sous 5 tiktoks différents et screen à chaque commentaire envoyer.\n` +
-                `> ou alors **boost 2 fois** le serveur et obtiens directement l'accès\n\n` +
-                `• une fois que tu as fais ça, envoie les preuves dans <#${SALON_PREUVE_ID}>`
-            );
-        
+            .setDescription(`• Rend toi sur tiktok, cherche **« serveur discord br »** clique sur une vidéo au hasard puis écris dans les commentaire :\n\n> **« /nella meilleur serveur »** (ecris bien **/fgMTVYKTXR**) tu dois le faire sous 5 tiktoks différents et screen à chaque commentaire envoyer.\n> ou alors **boost 2 fois** le serveur et obtiens directement l'accès\n\n• une fois que tu as fais ça, envoie les preuves dans <#${SALON_PREUVE_ID}>`);
         await message.channel.send({ embeds: [infoEmbed] });
+        message.delete().catch(() => null);
+    }
+
+    // COMMANDE !SETUP-PREMIUM (Premium)
+    if (message.content.toLowerCase() === '!setup-premium' && message.member.permissions.has('Administrator')) {
+        const premiumEmbed = new EmbedBuilder()
+            .setColor('#2b2d31')
+            .setTitle('Accès Premium Illimité pour SEULEMENT 3€')
+            .setDescription(`Débloque **TOUT** le contenu exclusif des créatrices les plus demandées : **Top Stars, Blondes, Brunes, Rousses, Métisses, MILF, Étudiantes, Curvy...**\n\n> **Des milliers de photos & vidéos en HD**\n> *Nouveaux ajouts tous les jours*\n> **Téléchargements illimités**\n> *Accès à vie (paiement unique)*\n\n➔ **Débloque maintenant : paypal ( en amis proche ) : @Mtztravox**`);
+        await message.channel.send({ embeds: [premiumEmbed] });
         message.delete().catch(() => null);
     }
 });
 
-// --- FONCTION DE VÉRIFICATION ---
 async function checkAndGiveRole(member, messageContext = null) {
     let count = 0;
     for (const guildId of REQUIRED_GUILDS) {
@@ -117,7 +108,6 @@ async function checkAndGiveRole(member, messageContext = null) {
             if (isPresent) count++;
         }
     }
-
     if (count === REQUIRED_GUILDS.length) {
         if (!member.roles.cache.has(ROLE_ACCES_SALON)) {
             const role = member.guild.roles.cache.get(ROLE_ACCES_SALON);
@@ -125,14 +115,12 @@ async function checkAndGiveRole(member, messageContext = null) {
                 await member.roles.add(role);
                 const channel = member.guild.channels.cache.get(SALON_SUCCESS_PING);
                 if (channel) {
-                    const pingMsg = await channel.send(`✅ ${member}, accès accordé (3/3 serveurs) ! 🔓`);
-                    setTimeout(() => pingMsg.delete().catch(() => null), 3000);
+                    channel.send(`✅ ${member}, accès accordé (3/3 serveurs) ! 🔓`).then(m => setTimeout(() => m.delete().catch(() => null), 3000));
                 }
             }
         }
     } else if (messageContext) {
-        messageContext.channel.send(`❌ Tu n'es que sur ${count}/3 serveurs partenaires.`)
-            .then(m => setTimeout(() => m.delete().catch(() => null), 5000));
+        messageContext.channel.send(`❌ Tu n'es que sur ${count}/3 serveurs partenaires.`).then(m => setTimeout(() => m.delete().catch(() => null), 5000));
     }
 }
 
