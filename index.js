@@ -1,8 +1,8 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds, 
-        GatewayIntentBits.GuildMembers, // Requis pour guildMemberAdd et guildMemberRemove
+        GatewayIntentBits.GuildMembers, 
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent 
     ] 
@@ -18,8 +18,9 @@ const ROLE_ACCES_SALON = '1482132121635262534';
 
 // SALONS
 const WELCOME_CHANNELS = ['1481783282130747402', '1481783371133747280', '1481783380948418663'];
-const SALON_ACCES_ID = '1481786737683333172'; 
-const SALON_PURGE_ID = '1481786737683333172';
+const SALON_SUCCESS_PING = '1481786658838941706'; // Salon où on ping la réussite
+const SALON_PURGE_ID = '1481786737683333172';    // Salon auto-suppression 5s
+const SALON_PREUVE_ID = '1482723907436806365';   // Salon des instructions (preuve)
 
 // SERVEURS PARTENAIRES REQUIS
 const REQUIRED_GUILDS = [
@@ -31,21 +32,18 @@ const REQUIRED_GUILDS = [
 
 client.once('ready', () => {
     console.log(`✅ Protect#0311 est opérationnel !`);
-    console.log(`📡 Surveillance active sur le serveur principal : ${MAIN_GUILD_ID}`);
     client.user.setActivity('3 serveurs partenaires', { type: 3 });
 });
 
-// --- ÉVÉNEMENT : QUAND QUELQU'UN REJOINT ---
+// --- ARRIVÉE D'UN MEMBRE ---
 client.on('guildMemberAdd', async (member) => {
     if (member.guild.id !== MAIN_GUILD_ID) return;
 
-    // 1. Rôle de base (Bienvenue)
     try {
         const welcomeRole = member.guild.roles.cache.get(ROLE_BIENVENUE_ID);
         if (welcomeRole) await member.roles.add(welcomeRole);
     } catch (e) { console.error("❌ Erreur rôle bienvenue:", e); }
 
-    // 2. Triple ping éphémère (3 sec)
     WELCOME_CHANNELS.forEach(channelId => {
         const channel = member.guild.channels.cache.get(channelId);
         if (channel) {
@@ -55,61 +53,66 @@ client.on('guildMemberAdd', async (member) => {
         }
     });
 
-    // 3. Vérification automatique des serveurs
     await checkAndGiveRole(member);
 });
 
-// --- ÉVÉNEMENT : QUAND QUELQU'UN QUITTE UN SERVEUR ---
+// --- DÉPART D'UN SERVEUR PARTENAIRE ---
 client.on('guildMemberRemove', async (member) => {
-    // Si l'utilisateur quitte l'un des 3 serveurs partenaires
     if (REQUIRED_GUILDS.includes(member.guild.id)) {
-        console.log(`⚠️ ${member.user.tag} a quitté le serveur partenaire : ${member.guild.name}`);
-        
         const mainGuild = client.guilds.cache.get(MAIN_GUILD_ID);
         if (!mainGuild) return;
 
         try {
-            // On cherche le membre sur ton serveur principal
             const mainMember = await mainGuild.members.fetch(member.id).catch(() => null);
-            
-            // S'il est sur ton serveur et qu'il a le rôle spécial, on lui retire
             if (mainMember && mainMember.roles.cache.has(ROLE_ACCES_SALON)) {
                 await mainMember.roles.remove(ROLE_ACCES_SALON);
-                console.log(`🚫 Rôle retiré à ${member.user.tag} (Condition 3/3 non remplie)`);
+                console.log(`🚫 Rôle retiré à ${member.user.tag} (quitté partenaire)`);
             }
-        } catch (error) {
-            console.error("❌ Erreur lors du retrait automatique du rôle :", error);
-        }
+        } catch (error) { console.error("❌ Erreur retrait rôle:", error); }
     }
 });
 
-// --- GESTION DES MESSAGES (PURGE + !CHECK) ---
+// --- GESTION DES MESSAGES ---
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // AUTO-NETTOYAGE DU SALON (5 SEC)
+    // 1. AUTO-NETTOYAGE (5 SEC)
     if (message.channel.id === SALON_PURGE_ID) {
         setTimeout(() => {
             message.delete().catch(() => null);
         }, 5000);
     }
 
-    // COMMANDE MANUELLE !CHECK
+    // 2. COMMANDE !CHECK
     if (message.content.toLowerCase() === '!check') {
         const reply = await message.reply("🔄 Vérification de tes accès en cours...");
         await checkAndGiveRole(message.member, message);
         setTimeout(() => reply.delete().catch(() => null), 3000);
     }
+
+    // 3. COMMANDE !SETUP-INFO (Pour afficher les instructions TikTok)
+    if (message.content.toLowerCase() === '!setup-info' && message.member.permissions.has('Administrator')) {
+        const infoEmbed = new EmbedBuilder()
+            .setColor('#2b2d31')
+            .setTitle('Tu veux les vidéos de toute les influenceuses, tiktok, snap et encore pleins d’autres contenu? suis juste les instructions :')
+            .setDescription(
+                `• Rend toi sur tiktok, cherche **« serveur discord br »** clique sur une vidéo au hasard puis écris dans les commentaire :\n\n` +
+                `> **« /nella meilleur serveur »** (ecris bien **/fgMTVYKTXR**) tu dois le faire sous 5 tiktoks différents et screen à chaque commentaire envoyer.\n` +
+                `> ou alors **boost 2 fois** le serveur et obtiens directement l'accès\n\n` +
+                `• une fois que tu as fais ça, envoie les preuves dans <#${SALON_PREUVE_ID}>`
+            );
+        
+        await message.channel.send({ embeds: [infoEmbed] });
+        message.delete().catch(() => null);
+    }
 });
 
-// --- FONCTION DE VÉRIFICATION ET ATTRIBUTION ---
+// --- FONCTION DE VÉRIFICATION ---
 async function checkAndGiveRole(member, messageContext = null) {
     let count = 0;
-    
     for (const guildId of REQUIRED_GUILDS) {
         const guild = client.guilds.cache.get(guildId);
         if (guild) {
-            // fetch() permet de vérifier même si le membre n'est pas dans le cache du bot
             const isPresent = await guild.members.fetch(member.id).catch(() => null);
             if (isPresent) count++;
         }
@@ -120,7 +123,7 @@ async function checkAndGiveRole(member, messageContext = null) {
             const role = member.guild.roles.cache.get(ROLE_ACCES_SALON);
             if (role) {
                 await member.roles.add(role);
-                const channel = member.guild.channels.cache.get(SALON_ACCES_ID);
+                const channel = member.guild.channels.cache.get(SALON_SUCCESS_PING);
                 if (channel) {
                     const pingMsg = await channel.send(`✅ ${member}, accès accordé (3/3 serveurs) ! 🔓`);
                     setTimeout(() => pingMsg.delete().catch(() => null), 3000);
