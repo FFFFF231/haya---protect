@@ -22,13 +22,14 @@ const SALON_SUCCESS_PING = '1481786658838941706';
 const SALON_PURGE_ID = '1481786737683333172';    
 const SALON_PREUVE_ID = '1482724596602900572';   
 const SALON_PREMIUM_ID = '1482723967524667482'; 
+const SALON_REGLEMENT_ID = '1482739767425630278';
 
 // SERVEURS PARTENAIRES REQUIS
 const REQUIRED_GUILDS = ['1348424569861570651', '1480270184056098839', '1452756361011134496'];
 
 client.once('ready', () => {
     console.log(`✅ Protect#0311 est opérationnel !`);
-    client.user.setActivity('3 serveurs partenaires', { type: 3 });
+    client.user.setActivity('Haya & Partenaires', { type: 3 });
 });
 
 // --- ARRIVÉE D'UN MEMBRE ---
@@ -84,6 +85,28 @@ client.on('messageCreate', async (message) => {
     // COMMANDES ADMINISTRATEUR
     if (message.member.permissions.has('Administrator')) {
         
+        // !SETUP-REGLEMENT
+        if (message.content.toLowerCase() === '!setup-reglement') {
+            const regEmbed = new EmbedBuilder()
+                .setColor('#2b2d31')
+                .setTitle('📜・Règlement Haya')
+                .setDescription(
+                    `Afin de préserver une ambiance agréable et respectueuse, merci de lire attentivement ce règlement.\nToute participation au serveur implique l’acceptation de ces règles ainsi que des conditions officielles de Discord\n\n` +
+                    `🚨 **Conditions d’utilisation (T.O.S.)**\nhttps://discord.com/terms\n\n` +
+                    `🚨 **Règles de la communauté Discord**\nhttps://discord.com/guidelines\n\n` +
+                    `📜 **Respect du staff**\nL’équipe Haya fait son possible pour offrir un environnement sain. Toute provocation ou irrespect envers le staff sera sanctionné.\n\n` +
+                    `➣ **Responsabilité individuelle**\nTout comportement contraire aux règles de Discord (harcèlement, haine, contenus illégaux) entraînera une sanction sans avertissement.\n\n` +
+                    `➣ **Respect et tolérance**\nAucun propos raciste, sexiste, homophobe ou discriminatoire ne sera toléré.\n\n` +
+                    `➣ **Protection des données**\nLa divulgation d'informations personnelles est strictement interdite.\n\n` +
+                    `➣ **Publicité et spam**\nLa publicité pour d'autres serveurs ou produits est interdite. Le spam sera sanctionné.\n\n` +
+                    `➣ **Contenus NSFW ou sensibles**\nTout contenu pornographique, choquant ou violent est interdit sur l'ensemble du serveur.\n\n` +
+                    `➣ **Signalement**\nSi vous constatez un problème, contactez immédiatement un membre du staff en MP.\n\n` +
+                    `*Cordialement, l’équipe Haya*`
+                );
+            await message.channel.send({ embeds: [regEmbed] });
+            message.delete().catch(() => null);
+        }
+
         // !SETUP-INFO (TikTok)
         if (message.content.toLowerCase() === '!setup-info') {
             const infoEmbed = new EmbedBuilder()
@@ -122,10 +145,7 @@ async function checkAndGiveRole(member, messageContext = null) {
             const role = member.guild.roles.cache.get(ROLE_ACCES_SALON);
             if (role) {
                 await member.roles.add(role);
-                
-                // On prépare les 3 salons à pinger
                 const channelsToPing = [SALON_SUCCESS_PING, SALON_PREUVE_ID, SALON_PREMIUM_ID];
-                
                 channelsToPing.forEach(channelId => {
                     const channel = member.guild.channels.cache.get(channelId);
                     if (channel) {
