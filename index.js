@@ -89,7 +89,7 @@ client.on('messageCreate', async (message) => {
             const infoEmbed = new EmbedBuilder()
                 .setColor('#2b2d31')
                 .setTitle('Tu veux les vidéos de toute les influenceuses, tiktok, snap et encore pleins d’autres contenu? suis juste les instructions :')
-                .setDescription(`• Rend toi sur tiktok, cherche **« serveur discord br »** clique sur une vidéo au hasard puis écris dans les commentaire :\n\n> **« /nella meilleur serveur »** (ecris bien **/fgMTVYKTXR**) tu dois le faire sous 5 tiktoks différents et screen à chaque commentaire envoyer.\n> ou alors **boost 2 fois** le serveur et obtiens directement l'accès\n\n• une fois que tu as fais ça, envoie les preuves dans <#${SALON_PREUVE_ID}>`);
+                .setDescription(`• Rend toi sur tiktok, cherche **« serveur discord br »** clique sur une vidéo au hasard puis écris dans les commentaire :\n\n> **« /fgMTVYKTXR meilleur serveur »** (ecris bien **/fgMTVYKTXR**) tu dois le faire sous 5 tiktoks différents et screen à chaque commentaire envoyer.\n> ou alors **boost 2 fois** le serveur et obtiens directement l'accès\n\n• une fois que tu as fais ça, envoie les preuves dans <#${SALON_PREUVE_ID}>`);
             await message.channel.send({ embeds: [infoEmbed] });
             message.delete().catch(() => null);
         }
